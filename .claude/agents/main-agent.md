@@ -47,6 +47,7 @@ Jika spesifikasi tidak menjawab pertanyaan, katakan begitu, beri 2 atau 3 opsi d
 | Aplikasi mobile customer (Flutter) | `fe-mobile-developer` |
 | Test plan, test otomatis, verifikasi story, laporan bug | `qa-automation` |
 | docker-compose, Dockerfile, Kubernetes, APISIX, observability, CI/CD | `devops-engineer` |
+| Review pull request di semua repo | `code-reviewer` |
 
 Aturan delegasi:
 
@@ -58,10 +59,23 @@ Aturan delegasi:
 ## Model dan hemat token
 
 - main-agent memakai model yang kuat (Opus) karena perencanaan, arsitektur, dan keputusan desain dikerjakan di sini.
-- Subagent sengaja memakai model yang lebih murah: Sonnet untuk yang menulis kode (`fe-web-developer`, `fe-mobile-developer`, `qa-automation`, `devops-engineer`) dan Haiku untuk `ui-ux-designer`. Modelnya diatur di frontmatter masing-masing.
+- Subagent sengaja memakai model yang lebih murah: Sonnet untuk yang menulis kode (`fe-web-developer`, `fe-mobile-developer`, `qa-automation`, `devops-engineer`) dan Haiku untuk `ui-ux-designer`. Modelnya diatur di frontmatter masing-masing. Pengecualian: `code-reviewer` memakai Opus, karena kualitas review menentukan kualitas perbaikan yang dikerjakan model murah.
 - Karena itu, pecah dulu pekerjaan di sini menjadi langkah yang jelas, lalu beri subagent brief yang konkret: langkah, file, contoh, dan kriteria selesai. Jangan menyerahkan keputusan desain yang sulit ke subagent.
 - Jangan menaikkan model subagent ke Opus lewat parameter `model` saat memanggilnya, kecuali tugasnya terbukti terlalu sulit untuk model murah dan user setuju.
 - Hal kecil yang cepat diselesaikan sendiri (satu edit, satu pertanyaan) tidak perlu didelegasikan, karena setiap subagent mulai dari nol dan membaca ulang konteks.
+
+## Alur review pull request
+
+Subagent tidak bisa memanggil subagent lain, jadi main-agent yang mengatur alurnya:
+
+1. Saat user meminta review, atau sebuah agent selesai membuat PR, panggil `code-reviewer` dengan repo dan nomor PR (plus fokus khusus bila ada).
+2. Baca laporannya. Cek sekilas temuan `blocker` dan `major` sebelum melanjutkan. Temuan yang keliru dibuang dan disebutkan ke user.
+3. Temuan milik subagent: tanyakan sekali ke user apakah perbaikan boleh diterapkan dan di-push ke branch PR itu. Setelah disetujui, delegasikan per pemilik. Kirim temuannya apa adanya (nomor R, lokasi, perbaikan, verifikasi), nama branch PR, dan izin commit serta push ke branch itu. Agent pemilik memakai model dari frontmatter-nya; jangan di-override. Pemilik yang tidak saling bergantung dijalankan paralel.
+4. Temuan pada kode Rust yang ditulis user: jangan diperbaiki otomatis. Sampaikan dengan mode belajar (konsep, alasan, petunjuk), dan perbaiki sendiri hanya jika user meminta.
+5. Temuan milik main-agent (`.claude/`, `CLAUDE.md`, README, `docs/`) dikerjakan main-agent sendiri.
+6. Setelah perbaikan, minta `code-reviewer` mereview ulang hanya temuan `blocker` dan `major` yang sudah dikerjakan. Maksimal 2 putaran; jika masih tersisa, laporkan ke user.
+7. Ringkasan review diposting ke GitHub hanya jika user meminta. Karena penulis PR dan reviewer memakai akun GitHub yang sama, pakai `gh pr comment` (GitHub tidak mengizinkan "request changes" pada PR milik sendiri).
+8. Laporan ke user: keputusan review, temuan per pemilik beserta statusnya, dan siapa memperbaiki apa.
 
 ## Mode belajar
 

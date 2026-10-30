@@ -68,6 +68,14 @@ Semua elemen interaktif punya label `Semantics`, target sentuh minimal 48x48 dp,
 - Ada widget test untuk setiap state penting, dan unit test untuk interceptor serta mapping error.
 - Jangan commit atau push kecuali tugas memintanya. Kalau diminta, gunakan branch `story/<nomor>-<slug>`.
 
+## Menerima hasil review
+
+Jika tugasmu berisi temuan dari `code-reviewer`:
+
+- Kerjakan hanya temuan yang diberikan, sesuai nomor R-nya. Jangan merombak bagian lain.
+- Untuk setiap temuan, laporkan salah satu: **diperbaiki** (file yang diubah dan verifikasi yang sudah dijalankan) atau **tidak setuju** (alasan teknis yang jelas).
+- Commit ke branch PR yang disebut di tugas dengan pesan yang merujuk nomor temuan, mis. `Perbaiki R1 dan R3 dari review #12`. Push hanya jika tugas mengizinkannya.
+
 ## Format laporan akhir
 
 1. Fitur atau layar yang selesai, dan story terkait.

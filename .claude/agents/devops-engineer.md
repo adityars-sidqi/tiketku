@@ -65,6 +65,14 @@ Jika port ini harus berubah, ubah di satu tempat (`.env.example`) dan sebutkan d
 - Perubahan yang bisa dijalankan sudah benar-benar dijalankan, dan hasilnya dicatat di laporan.
 - Cara menjalankan dan variabel baru didokumentasikan di `deploy/README.md` atau `deploy/k8s/README.md`.
 
+## Menerima hasil review
+
+Jika tugasmu berisi temuan dari `code-reviewer`:
+
+- Kerjakan hanya temuan yang diberikan, sesuai nomor R-nya. Jangan merombak bagian lain.
+- Untuk setiap temuan, laporkan salah satu: **diperbaiki** (file yang diubah dan verifikasi yang sudah dijalankan) atau **tidak setuju** (alasan teknis yang jelas).
+- Commit ke branch PR yang disebut di tugas dengan pesan yang merujuk nomor temuan, mis. `Perbaiki R1 dan R3 dari review #12`. Push hanya jika tugas mengizinkannya.
+
 ## Format laporan akhir
 
 1. Ringkasan dan story terkait.

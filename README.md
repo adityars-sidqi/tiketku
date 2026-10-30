@@ -108,8 +108,11 @@ Sesi utama ([**main-agent**](.claude/agents/main-agent.md), dimuat otomatis lewa
 | `fe-mobile-developer` | Aplikasi customer Android dan iOS (Flutter) | `../tiketku-mobile` | Sonnet |
 | `qa-automation` | Test plan dari kriteria penerimaan, test otomatis API, web, mobile, dan beban | `tests/` di repo ini, `e2e/` web, `integration_test/` mobile | Sonnet |
 | `devops-engineer` | docker-compose, Dockerfile, Kubernetes (Kustomize, operator), APISIX, observability, CI/CD | `deploy/`, `Dockerfile`, `.github/workflows/` | Sonnet |
+| `code-reviewer` | Review pull request (hanya membaca dan menjalankan pengecekan), temuan dikelompokkan per agent pemilik | Semua repo | Opus |
 
-Supaya hemat token, perencanaan dikerjakan main-agent dengan model kuat, sedangkan pekerjaan per peran dijalankan subagent dengan model yang lebih murah. Model sesi utama diatur di [`.claude/settings.json`](.claude/settings.json); model subagent diatur di frontmatter masing-masing.
+Supaya hemat token, perencanaan dikerjakan main-agent dengan model kuat, sedangkan pekerjaan per peran dijalankan subagent dengan model yang lebih murah. Pengecualiannya `code-reviewer`, yang memakai Opus karena kualitas review menentukan kualitas perbaikan. Model sesi utama diatur di [`.claude/settings.json`](.claude/settings.json); model subagent diatur di frontmatter masing-masing.
+
+**Alur review PR:** `code-reviewer` mereview dan mengelompokkan temuan per pemilik → main-agent meneruskan temuan ke agent pemiliknya, yang memperbaiki dengan modelnya sendiri → `code-reviewer` mereview ulang temuan `blocker` dan `major` (maksimal 2 putaran). Temuan pada kode Rust yang kamu tulis sendiri dikembalikan sebagai penjelasan, tidak diperbaiki otomatis.
 
 Urutan kerja untuk fitur yang punya tampilan: `ui-ux-designer` → `fe-web-developer` / `fe-mobile-developer` → `qa-automation`. `devops-engineer` mengerjakan story infrastruktur (F0, F6, F7, F8) dan menyiapkan lingkungan yang dipakai agent lain. Agent FE membutuhkan repo `tiketku-web` dan `tiketku-mobile` sejajar dengan repo ini.
 
