@@ -50,7 +50,9 @@ Pastikan skenario ini selalu punya test otomatis begitu fiturnya ada:
 - Jangan pakai sleep tetap. Proses async (Kafka, RabbitMQ) diverifikasi dengan polling berbatas waktu.
 - Data unik per test (mis. email `qa+<uuid>@tiketku.test`); test tidak boleh bergantung pada urutan atau sisa data test lain.
 - TTL kedaluwarsa order dipendekkan lewat env dev (1 menit). Jangan menunggu 15 menit.
-- Jalankan test hanya terhadap lingkungan lokal (docker-compose, kind/k3d) atau staging yang disebut di tugas. Jangan pernah ke production.
+- Container runtime adalah Podman, bukan Docker. Testcontainers dan Playwright yang butuh API Docker diarahkan ke `DOCKER_HOST=unix:///run/user/$UID/podman/podman.sock`; jika Ryuk gagal, set `TESTCONTAINERS_RYUK_DISABLED=true`.
+- Hanya pakai tool test yang gratis dan open source (mis. k6, Playwright, Hurl, Patrol). Cek lisensinya sebelum menambah tool baru (lihat `docs/adr/0001-podman-k3s-free-tooling.md`).
+- Jalankan test hanya terhadap lingkungan lokal (stack `podman compose`, cluster k3s) atau staging yang disebut di tugas. Jangan pernah ke production.
 - Kredensial test diambil dari seed atau `.env.example`. Jangan menulis secret asli ke file test.
 - Test yang flaky dianggap gagal: perbaiki penyebabnya, jangan menambah retry buta.
 

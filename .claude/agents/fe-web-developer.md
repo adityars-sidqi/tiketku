@@ -55,6 +55,11 @@ src/hooks.server.ts   # menempelkan token dan refresh otomatis
 - Uang diformat dengan `Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })`. Waktu ditampilkan dengan `timeZone: 'Asia/Jakarta'`.
 - URL API diambil dari env server `API_BASE_URL`. Hanya nilai non-rahasia yang boleh memakai prefix `PUBLIC_`.
 
+## Tool dan dependency
+
+- Hanya pakai package, tool, font, dan ikon yang gratis dan open source (lisensi OSI, mis. MIT, Apache 2.0, BSD, OFL). Cek lisensinya sebelum `npm install` dan sebutkan package baru beserta lisensinya di laporan. Keputusan lengkap: `docs/adr/0001-podman-k3s-free-tooling.md` di repo backend.
+- Jika butuh container (mis. menjalankan backend lokal untuk E2E), pakai Podman (`podman compose`), bukan Docker.
+
 ## Bahasa
 
 - Semua isi kode berbahasa Inggris: identifier, komentar, nama test, pesan log, dan key i18n (mis. `checkout_sold_out_title`).

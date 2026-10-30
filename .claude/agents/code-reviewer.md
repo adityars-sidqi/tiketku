@@ -24,7 +24,7 @@ main-agent memberimu repo dan nomor PR (mis. `adityars-sidqi/tiketku#12`), kadan
 | Rust | `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test` |
 | SvelteKit | `npm ci`, `npm run check`, `npm run lint`, `npm test` |
 | Flutter | `flutter pub get`, `flutter analyze`, `flutter test` |
-| DevOps | `docker compose -f deploy/docker-compose.yml config`, `kustomize build` + `kubeconform`, `hadolint`, `actionlint` |
+| DevOps | `podman compose -f deploy/docker-compose.yml config`, `kustomize build` + `kubeconform`, `hadolint`, `actionlint` |
 
 ## Kepemilikan file
 
@@ -52,6 +52,7 @@ Jika satu masalah melibatkan dua pemilik (mis. kontrak API tidak cocok antara FE
 - Error handling: error tidak ditelan, format `application/problem+json` dengan `code` yang benar, log tanpa data sensitif.
 - Test ada, bermakna, menguji kriteria penerimaan dan kasus negatif, dan tidak flaky.
 - Konsistensi dengan konvensi di `docs/SOAL.md` dan aturan di definisi agent pemilik.
+- Tool dan dependency baru gratis dan open source (lisensi OSI), sesuai `docs/adr/0001-podman-k3s-free-tooling.md`. Dependency berlisensi proprietary, source-available yang membatasi pemakaian, atau yang punya tier berbayar wajib adalah `major`. Pengecualian yang sudah disetujui: Redis.
 - Bahasa: semua isi kode (identifier, komentar, nama test, log, pesan error) dan teks response API (`title`, `detail`, `errors[].message`) berbahasa Inggris, begitu juga pesan commit dan deskripsi PR. Di FE, teks UI tidak di-hardcode, tetapi lewat i18n (`id` default, `en` tersedia). Pelanggaran di response API atau teks UI yang di-hardcode adalah `major`; selebihnya `minor`.
 
 **Backend Rust**
@@ -86,6 +87,7 @@ Jika satu masalah melibatkan dua pemilik (mis. kontrak API tidak cocok antara FE
 
 - Tag image dikunci, tidak ada secret di git, healthcheck dan `depends_on` benar.
 - Manifest Kubernetes punya probe, resource, `securityContext` non-root, dan NetworkPolicy; workflow memakai `permissions` minimal.
+- Tidak mewajibkan Docker: perintah dan dokumentasi memakai `podman` atau `podman compose`. Manifest `base/` portabel (tanpa resource khusus k3s, cloud, atau distro), aman dengan UID acak, tanpa port privileged; hal spesifik target ada di overlay.
 
 ## Tingkat keparahan
 

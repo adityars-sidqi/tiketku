@@ -26,7 +26,8 @@ flowchart TB
 | Event dan message broker | Apache Kafka (KRaft), RabbitMQ |
 | Auth | OAuth2 Authorization Server sendiri (Authorization Code + PKCE, refresh token, client credentials), JWT RS256 |
 | Gateway | Apache APISIX |
-| Deploy | Docker, Kubernetes (kind/k3d), Kustomize, operator Strimzi, CloudNativePG, RabbitMQ |
+| Deploy | Podman, Kubernetes (lokal k3s, manifest portabel ke cluster mana pun), Kustomize, operator Strimzi, CloudNativePG, RabbitMQ |
+| Prinsip tool | Hanya tool gratis dan open source, lihat [ADR 0001](docs/adr/0001-podman-k3s-free-tooling.md) |
 | Observability | OpenTelemetry, Jaeger, Prometheus, Grafana |
 
 ## Timeline dan deadline

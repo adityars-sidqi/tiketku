@@ -15,7 +15,8 @@ Bangun backend **TiketKu**, platform pemesanan tiket konser dan event, sebagai 5
 | Konsumen | Aplikasi mobile (Android/iOS) dan web (SPA) |
 | Jumlah service | 5: auth, catalog, order, payment, notification |
 | Komponen wajib | Microservice, Kafka (event driven), RabbitMQ (message broker), rate limit, API Gateway, OAuth2 server buatan sendiri |
-| Target deploy | Kubernetes (lokal: kind atau k3d) |
+| Target deploy | Kubernetes apa pun (lokal: k3s; manifest portabel ke kind, minikube, EKS, GKE, AKS, OpenShift) |
+| Tool | Hanya tool gratis dan open source; container runtime Podman (lihat [ADR 0001](adr/0001-podman-k3s-free-tooling.md)) |
 
 **Konsep Rust yang dilatih:**
 
@@ -175,7 +176,7 @@ Framework web wajib **Axum** di atas **Tokio**. Axum dibuat tim Tokio dan berbas
 | CLI | `clap` | Untuk `pg-simulator` |
 | Testing | `testcontainers`, `testcontainers-modules`, `tower` (`ServiceExt::oneshot`) | Integration test dengan Postgres, Redis, Kafka asli di container |
 
-**Tool pendukung:** `sqlx-cli` (migrasi), `cargo-chef` (cache build Docker), `cargo-audit` (cek kerentanan dependency), `clippy` dan `rustfmt`.
+**Tool pendukung:** `sqlx-cli` (migrasi), `cargo-chef` (cache build image), `cargo-audit` (cek kerentanan dependency), `clippy` dan `rustfmt`.
 
 **Versi:** pakai versi stabil terbaru dari crates.io. `cargo add` otomatis memilih versi terbaru. Simpan versinya di `[workspace.dependencies]` agar semua service seragam.
 
@@ -992,7 +993,7 @@ Target observability: satu `trace_id` bisa diikuti dari `POST /orders` sampai em
 | Unit | State machine order, verifikasi PKCE, hitung total, validasi DTO, signature HMAC | `#[test]`, tanpa I/O |
 | Integration | Repository + migrasi, endpoint lewat router (`oneshot`), consumer Kafka dan RabbitMQ | `testcontainers` (Postgres, Redis, Kafka, RabbitMQ) |
 | Konkurensi (wajib) | 500 request bersamaan ke kategori berkuota 100: tepat 100 sukses, 400 `SOLD_OUT`, dan `reserved + sold <= quota` | `tokio::spawn` + `futures::future::join_all` |
-| End-to-end | Register → login → order → webhook → e-tiket muncul di Mailpit | Hurl atau script bash ke docker-compose |
+| End-to-end | Register → login → order → webhook → e-tiket muncul di Mailpit | Hurl atau script bash ke stack `podman compose` |
 | Beban | Simulasi war tiket 1.000 virtual user | k6 |
 | Kontrak | OpenAPI tiap service valid dan tidak ada perubahan yang merusak | `utoipa` + diff OpenAPI di CI |
 
@@ -1000,7 +1001,9 @@ Target observability: satu `trace_id` bisa diikuti dari `POST /orders` sampai em
 
 ## Deployment Kubernetes
 
-Cluster lokal memakai **kind** atau **k3d**. Manifest service ditulis dengan Kustomize (`base/` + `overlays/dev`, `overlays/prod`), sedangkan infrastruktur stateful dipasang lewat operator, bukan ditulis manual.
+Cluster lokal memakai **k3s** (dipasang dengan `--disable traefik`, context `k3s-tiketku`). Manifest service ditulis dengan Kustomize (`base/` + `overlays/dev`, `overlays/prod`), sedangkan infrastruktur stateful dipasang lewat operator, bukan ditulis manual.
+
+Manifest wajib portabel: `base/` hanya memakai API Kubernetes standar, dan hal yang spesifik target (storage class, tipe Service, host ingress) diletakkan di overlay. Dengan begitu manifest yang sama bisa di-deploy ke k3s, kind, minikube, cluster managed (EKS, GKE, AKS), maupun OpenShift. Container berjalan non-root, aman dengan UID acak, tanpa port privileged, dan dengan `readOnlyRootFilesystem`.
 
 | Namespace | Isi | Cara pasang |
 | --- | --- | --- |
@@ -1010,7 +1013,7 @@ Cluster lokal memakai **kind** atau **k3d**. Manifest service ditulis dengan Kus
 | `observability` | OTel Collector, Jaeger, Prometheus, Grafana | Helm (mis. kube-prometheus-stack) |
 | `cert-manager` | cert-manager | Helm |
 
-**Image Docker** (multi-stage dengan `cargo-chef`, runtime distroless non-root):
+**Image OCI** dibangun dengan `podman build` dari `Dockerfile` (multi-stage dengan `cargo-chef`, runtime distroless non-root):
 
 ```dockerfile
 FROM rust:1-bookworm AS chef
@@ -1035,7 +1038,7 @@ COPY --from=builder /app/server /server
 ENTRYPOINT ["/server"]
 ```
 
-Image distroless tidak punya shell maupun libssl. Jika `rdkafka` memakai TLS, aktifkan fitur `ssl-vendored` agar OpenSSL ter-link statis. Di kind, muat image lokal dengan `kind load docker-image`.
+Image distroless tidak punya shell maupun libssl. Jika `rdkafka` memakai TLS, aktifkan fitur `ssl-vendored` agar OpenSSL ter-link statis. Di k3s, masukkan image lokal dengan `podman save <image> | sudo k3s ctr images import -`.
 
 **Contoh manifest order-service**
 
@@ -1129,7 +1132,7 @@ Kerjakan berurutan dari Fase 0 sampai 8; tiap fase harus jalan dan teruji sebelu
 
 | Fase | Fokus | Selesai jika | Konsep Rust utama |
 | --- | --- | --- | --- |
-| 0. Fondasi | Cargo workspace, `docker-compose.yml` (Postgres, Redis, Kafka, RabbitMQ, Mailpit, APISIX, Jaeger), crate `common` | `docker compose up` sehat; service kosong menjawab `/health/live` | Workspace, module, trait `From` dan `IntoResponse` |
+| 0. Fondasi | Cargo workspace, `docker-compose.yml` (Postgres, Redis, Kafka, RabbitMQ, Mailpit, APISIX, Jaeger), crate `common` | `podman compose up` sehat; service kosong menjawab `/health/live` | Workspace, module, trait `From` dan `IntoResponse` |
 | 1. catalog-service | CRUD event dan kategori, migrasi `sqlx`, validasi, pagination, OpenAPI, cache Redis | Integration test dengan testcontainers lulus | Extractor Axum, `State`, `serde`, `sqlx::query!`, `Result` dan `?` |
 | 2. auth-service | Register, authorize + halaman login, token (3 grant), rotasi refresh token, revoke, JWKS, metadata; crate `auth-jwt` | Login PKCE lewat Postman menghasilkan token yang diterima catalog-service; refresh token bekas mencabut seluruh family | `spawn_blocking`, crate kripto, `FromRequestParts`, newtype |
 | 3. order-service | Reservasi internal (`client_credentials`), state machine, `Idempotency-Key`, rate limit Redis | Test konkurensi 500 request vs kuota 100 lulus tanpa oversell | Enum + `match`, `Arc`, task paralel, `redis::Script` |
@@ -1145,7 +1148,7 @@ Project dianggap selesai jika semua kriteria wajib di bawah bisa didemokan. Cent
 
 **Kriteria wajib**
 
-- [ ] `docker compose up` menjalankan semua komponen; README menjelaskan cara menjalankan dalam maksimal 5 perintah.
+- [ ] `podman compose up` menjalankan semua komponen; README menjelaskan cara menjalankan dalam maksimal 5 perintah.
 - [ ] Register, login Authorization Code + PKCE, refresh, dan revoke berjalan; refresh token bekas yang dipakai ulang mencabut seluruh family.
 - [ ] Endpoint terlindungi tanpa token menjawab `401`, scope kurang menjawab `403`, order milik orang lain menjawab `404`.
 - [ ] Tes war tiket: 500 request bersamaan ke kuota 100 menghasilkan tepat 100 order dan 400 `SOLD_OUT`; `reserved + sold <= quota` selalu benar.
@@ -1158,7 +1161,7 @@ Project dianggap selesai jika semua kriteria wajib di bawah bisa didemokan. Cent
 - [ ] Melebihi rate limit menghasilkan `429` dengan header `Retry-After`.
 - [ ] SMTP dimatikan: email di-retry, lalu masuk `email.dlq` setelah 5 kali gagal.
 - [ ] Semua service punya log JSON dengan `trace_id`, endpoint `/metrics`, health probe, dan graceful shutdown.
-- [ ] Deploy ke kind atau k3d berhasil; HPA order-service menambah replika saat uji beban k6.
+- [ ] Deploy ke k3s berhasil dengan manifest yang tetap portabel; HPA order-service menambah replika saat uji beban k6.
 - [ ] CI hijau: `fmt`, `clippy -D warnings`, test, dan `cargo audit`.
 
 **Bobot penilaian**
