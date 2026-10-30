@@ -52,6 +52,7 @@ Jika satu masalah melibatkan dua pemilik (mis. kontrak API tidak cocok antara FE
 - Error handling: error tidak ditelan, format `application/problem+json` dengan `code` yang benar, log tanpa data sensitif.
 - Test ada, bermakna, menguji kriteria penerimaan dan kasus negatif, dan tidak flaky.
 - Konsistensi dengan konvensi di `docs/SOAL.md` dan aturan di definisi agent pemilik.
+- Bahasa: semua isi kode (identifier, komentar, nama test, log, pesan error) dan teks response API (`title`, `detail`, `errors[].message`) berbahasa Inggris, begitu juga pesan commit dan deskripsi PR. Di FE, teks UI tidak di-hardcode, tetapi lewat i18n (`id` default, `en` tersedia). Pelanggaran di response API atau teks UI yang di-hardcode adalah `major`; selebihnya `minor`.
 
 **Backend Rust**
 

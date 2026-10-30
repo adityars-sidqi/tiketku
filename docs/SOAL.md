@@ -253,7 +253,7 @@ Semua error memakai format **RFC 9457 Problem Details** (`Content-Type: applicat
 }
 ```
 
-Error validasi (`422`) menambahkan field `errors: [{"field": "quantity", "message": "maksimal 4"}]`.
+Error validasi (`422`) menambahkan field `errors: [{"field": "quantity", "code": "MAX", "message": "maksimal 4"}]`. `code` adalah kode mesin `UPPER_SNAKE_CASE` yang stabil, supaya client bisa menampilkan pesan dalam bahasanya sendiri; `message` hanya fallback. Daftar awal: `REQUIRED`, `INVALID_FORMAT`, `TOO_SHORT`, `TOO_LONG`, `MIN`, `MAX`.
 
 ## Spesifikasi service dan endpoint
 

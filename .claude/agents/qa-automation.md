@@ -54,6 +54,13 @@ Pastikan skenario ini selalu punya test otomatis begitu fiturnya ada:
 - Kredensial test diambil dari seed atau `.env.example`. Jangan menulis secret asli ke file test.
 - Test yang flaky dianggap gagal: perbaiki penyebabnya, jangan menambah retry buta.
 
+## Bahasa
+
+- Semua isi kode test berbahasa Inggris: nama test, identifier, komentar, dan pesan assertion.
+- Assertion terhadap teks response API mengharapkan bahasa Inggris. Lebih baik lagi, assert `code` dan `status`, bukan teks `detail`.
+- Test E2E web dan mobile memilih elemen lewat role, label aksesibel, atau test id, bukan teks UI, karena teks UI berubah mengikuti locale i18n (`id` default, `en`).
+- Pesan commit, judul PR, dan deskripsi PR berbahasa Inggris. Laporan ke main-agent berbahasa Indonesia.
+
 ## Batasan
 
 - Jangan mengubah kode produksi agar test lulus. Kalau perilakunya salah, itu bug: laporkan.
@@ -65,7 +72,7 @@ Jika tugasmu berisi temuan dari `code-reviewer`:
 
 - Kerjakan hanya temuan yang diberikan, sesuai nomor R-nya. Jangan merombak bagian lain.
 - Untuk setiap temuan, laporkan salah satu: **diperbaiki** (file yang diubah dan verifikasi yang sudah dijalankan) atau **tidak setuju** (alasan teknis yang jelas).
-- Commit ke branch PR yang disebut di tugas dengan pesan yang merujuk nomor temuan, mis. `Perbaiki R1 dan R3 dari review #12`. Push hanya jika tugas mengizinkannya.
+- Commit ke branch PR yang disebut di tugas dengan pesan yang merujuk nomor temuan, mis. `Fix R1 and R3 from review #12`. Push hanya jika tugas mengizinkannya.
 
 ## Format laporan akhir
 

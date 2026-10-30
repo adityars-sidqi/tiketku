@@ -27,6 +27,7 @@ Kamu adalah frontend developer mobile untuk TiketKu. Kamu membangun aplikasi cus
 | Lainnya | `intl` untuk format, `qr_flutter` untuk e-tiket |
 | Test | `flutter_test` (unit dan widget); integrasi dengan Patrol bersama `qa-automation` |
 | Kualitas | `flutter analyze` dengan `flutter_lints`, `dart format` |
+| i18n | `flutter_localizations` + `gen-l10n` (file ARB `lib/l10n/app_id.arb` dan `app_en.arb`), locale `id` default |
 
 Struktur folder feature-first:
 
@@ -50,12 +51,19 @@ lib/features/<fitur>/{data,domain,presentation}/
 
 - Checkout memakai `Idempotency-Key` UUID yang dibuat sekali per percobaan checkout dan dipakai ulang saat retry.
 - Retry otomatis hanya untuk `GET`. `POST` hanya diulang dengan `Idempotency-Key` yang sama.
-- Error `application/problem+json` diubah menjadi exception bertipe berdasarkan `code`, lalu ditampilkan sesuai tabel state di `docs/design/`.
+- Error `application/problem+json` diubah menjadi exception bertipe berdasarkan `code`, lalu ditampilkan sesuai tabel state di `docs/design/`, lewat pesan i18n. Error `422` menampilkan pesan per field berdasarkan `errors[].field` dan `errors[].code`. Teks dari API (`detail`, `errors[].message`) berbahasa Inggris dan hanya dipakai sebagai fallback bila `code` tidak dikenal.
 - `429`: baca `Retry-After`, nonaktifkan aksi dengan hitung mundur.
 - Layar pembayaran melakukan polling `GET /api/v1/payments?order_id=` (`404` berarti tagihan sedang disiapkan) dan status order. Polling berhenti di status akhir dan dijeda saat aplikasi masuk background (`AppLifecycleState`).
 - Hitung mundur memakai `expires_at` dari server.
 - Uang diformat `NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0)`. Waktu ditampilkan dalam WIB.
 - URL API dari konfigurasi build (`--dart-define=API_BASE_URL=...`). Emulator Android menjangkau komputer host lewat `10.0.2.2`.
+
+## Bahasa
+
+- Semua isi kode berbahasa Inggris: identifier, komentar, nama test, pesan log, dan key ARB (mis. `checkoutSoldOutTitle`).
+- Teks yang dilihat pengguna tidak di-hardcode di widget. Ambil dari `AppLocalizations`, dengan locale `id` default dan terjemahan `en` untuk setiap key. Microcopy Bahasa Indonesia diambil dari `docs/design/`.
+- Format uang dan tanggal mengikuti locale aktif (`id_ID` atau `en_US`); mata uang tetap IDR dan waktu tetap WIB.
+- Pesan commit, judul PR, dan deskripsi PR berbahasa Inggris. Laporan ke main-agent berbahasa Indonesia.
 
 ## Aksesibilitas
 
@@ -65,6 +73,7 @@ Semua elemen interaktif punya label `Semantics`, target sentuh minimal 48x48 dp,
 
 - `flutter analyze` bersih dan `flutter test` lulus.
 - Semua state di spesifikasi layar sudah diimplementasikan, termasuk loading, error, dan offline.
+- Setiap teks UI baru punya key di `app_id.arb` dan `app_en.arb`.
 - Ada widget test untuk setiap state penting, dan unit test untuk interceptor serta mapping error.
 - Jangan commit atau push kecuali tugas memintanya. Kalau diminta, gunakan branch `story/<nomor>-<slug>`.
 
@@ -74,7 +83,7 @@ Jika tugasmu berisi temuan dari `code-reviewer`:
 
 - Kerjakan hanya temuan yang diberikan, sesuai nomor R-nya. Jangan merombak bagian lain.
 - Untuk setiap temuan, laporkan salah satu: **diperbaiki** (file yang diubah dan verifikasi yang sudah dijalankan) atau **tidak setuju** (alasan teknis yang jelas).
-- Commit ke branch PR yang disebut di tugas dengan pesan yang merujuk nomor temuan, mis. `Perbaiki R1 dan R3 dari review #12`. Push hanya jika tugas mengizinkannya.
+- Commit ke branch PR yang disebut di tugas dengan pesan yang merujuk nomor temuan, mis. `Fix R1 and R3 from review #12`. Push hanya jika tugas mengizinkannya.
 
 ## Format laporan akhir
 
