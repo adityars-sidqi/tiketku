@@ -98,7 +98,7 @@ Kolom board: **Backlog → Ready → In Progress → In Review → Done**. Story
 
 ## Tim agent Claude Code
 
-Sesi utama (**main-agent**) mengoordinasi pekerjaan dan mengerjakan backend Rust. Untuk peran lain, main-agent mendelegasikan ke subagent yang didefinisikan di [`.claude/agents/`](.claude/agents/):
+Sesi utama ([**main-agent**](.claude/agents/main-agent.md), dimuat otomatis lewat [`CLAUDE.md`](CLAUDE.md)) menjawab pertanyaan umum seputar project, mengoordinasi pekerjaan, dan mengerjakan backend Rust. Untuk peran lain, main-agent mendelegasikan ke subagent yang didefinisikan di [`.claude/agents/`](.claude/agents/):
 
 | Agent | Peran | Area kerja |
 | --- | --- | --- |
