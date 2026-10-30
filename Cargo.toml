@@ -1,0 +1,32 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/common",
+    "services/auth-service",
+    "services/catalog-service",
+    "services/order-service",
+    "services/payment-service",
+    "services/notification-service",
+    "tools/pg-simulator",
+]
+
+# Metadata inherited by every member crate via `xxx.workspace = true`.
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.98"
+publish = false
+
+# The only place crate versions are written. Member crates just write
+# `name = { workspace = true }` (optionally adding `features`).
+[workspace.dependencies]
+common = { path = "crates/common" }
+
+anyhow = "1.0.104"
+tokio = { version = "1.54.1", features = ["full"] }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }

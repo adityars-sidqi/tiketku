@@ -1,0 +1,15 @@
+[package]
+name = "catalog-service"
+description = "Events, venues, ticket categories, and stock for TiketKu"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+common = { workspace = true }
+anyhow = { workspace = true }
+tokio = { workspace = true }
+
+[lints]
+workspace = true
