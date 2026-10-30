@@ -98,11 +98,11 @@ Kolom board: **Backlog → Ready → In Progress → In Review → Done**. Story
 
 ## Tim agent Claude Code
 
-Sesi utama ([**main-agent**](.claude/agents/main-agent.md), dimuat otomatis lewat [`CLAUDE.md`](CLAUDE.md)) menjawab pertanyaan umum seputar project, mengoordinasi pekerjaan, dan mengerjakan backend Rust. Untuk peran lain, main-agent mendelegasikan ke subagent yang didefinisikan di [`.claude/agents/`](.claude/agents/):
+Sesi utama ([**main-agent**](.claude/agents/main-agent.md), dimuat otomatis lewat [`CLAUDE.md`](CLAUDE.md)) adalah asisten harian, penasihat backend engineering lintas bahasa, dan pemimpin tim agent. main-agent selalu meminta persetujuan sebelum tindakan kritikal: commit dan merge, perubahan arsitektur atau kontrak API, pergeseran jadwal atau scope, biaya tambahan, urusan keamanan, dan operasi destruktif. Untuk peran lain, main-agent mendelegasikan ke subagent yang didefinisikan di [`.claude/agents/`](.claude/agents/):
 
 | Agent | Peran | Area kerja | Model |
 | --- | --- | --- | --- |
-| `main-agent` | Perencanaan, arsitektur, pertanyaan umum, backend Rust, koordinasi | Repo ini | Opus |
+| `main-agent` | Asisten harian, penasihat backend lintas bahasa, perencanaan dan arsitektur, backend, pemimpin tim agent | Semua repo | Opus |
 | `ui-ux-designer` | User flow, wireframe, design system, spesifikasi layar, aksesibilitas | `docs/design/` di repo ini | Haiku |
 | `fe-web-developer` | Web customer dan dashboard organizer (SvelteKit + TypeScript) | `../tiketku-web` | Sonnet |
 | `fe-mobile-developer` | Aplikasi customer Android dan iOS (Flutter) | `../tiketku-mobile` | Sonnet |
