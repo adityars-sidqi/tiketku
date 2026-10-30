@@ -3,7 +3,7 @@
 Backend microservice untuk pemesanan tiket konser dan event, ditulis dengan **Rust**. Project belajar dengan studi kasus nyata: "war tiket" tanpa oversell, OAuth2 server buatan sendiri, event driven dengan Kafka, job dengan RabbitMQ, API Gateway, dan deploy ke Kubernetes.
 
 - Spesifikasi lengkap soal: [docs/SOAL.md](docs/SOAL.md)
-- Board agile (user story): tab **Projects** di repo ini
+- Board agile (user story): [TiketKu Board](https://github.com/users/adityars-sidqi/projects/8)
 - Deadline per fase: [Milestones](https://github.com/adityars-sidqi/tiketku/milestones)
 
 > Status: belum ada kode. Fase 0 dimulai **Senin, 2 November 2026**.
@@ -73,12 +73,21 @@ gantt
 
 Kolom board: **Backlog → Ready → In Progress → In Review → Done**. Story fase aktif ada di Ready; sisanya di Backlog sampai fasenya tiba.
 
-1. Buka board, filter `Fase` ke fase aktif, ambil story teratas di **Ready** (P0 dulu).
+[TiketKu Board](https://github.com/users/adityars-sidqi/projects/8) punya empat view:
+
+| View | Isi |
+| --- | --- |
+| Backlog | Tabel semua story dengan Status, Fase, Prioritas, Story Points, Target |
+| Board | Kanban semua fase (tanpa Bonus) |
+| Fase aktif | Kanban yang difilter ke fase berjalan (`fase:F0`); dipakai sehari-hari |
+| Roadmap | Garis waktu story berdasarkan field Mulai dan Target |
+
+1. Buka view **Fase aktif**, ambil story teratas di **Ready** (P0 dulu).
 2. Assign ke diri sendiri, pindahkan ke **In Progress**.
 3. Buat branch `story/<nomor-issue>-<slug>`, contoh `story/16-login-pkce`.
 4. Commit kecil-kecil. Buka PR dengan `Closes #<nomor-issue>`, pindahkan kartu ke **In Review**.
 5. Merge setelah semua kriteria penerimaan tercentang dan CI hijau. Issue tertutup otomatis dan kartu pindah ke **Done**.
-6. Saat fase baru dimulai, pindahkan story fase itu dari Backlog ke Ready.
+6. Saat fase baru dimulai, pindahkan story fase itu dari Backlog ke Ready, lalu ubah filter view **Fase aktif** (mis. `fase:F1`) dan simpan.
 
 **Definition of Done** untuk setiap story:
 
