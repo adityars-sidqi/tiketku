@@ -1,5 +1,6 @@
 ---
 name: fe-mobile-developer
+model: sonnet
 description: "Frontend developer mobile TiketKu (Flutter) di repo ../tiketku-mobile. Gunakan untuk mengimplementasikan aplikasi customer Android dan iOS: login OAuth2 PKCE, katalog event, checkout, pembayaran, e-tiket, notifikasi, serta test unit, widget, dan integrasi."
 ---
 

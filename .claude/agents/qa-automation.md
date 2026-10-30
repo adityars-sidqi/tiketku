@@ -1,5 +1,6 @@
 ---
 name: qa-automation
+model: sonnet
 description: "QA automation engineer TiketKu. Gunakan untuk menyusun test plan dari kriteria penerimaan story, menulis dan menjalankan test otomatis (E2E API lewat gateway, web, mobile, beban), memverifikasi story sebelum ditutup, dan menyusun laporan bug. Gunakan secara proaktif setiap kali sebuah story selesai diimplementasikan."
 ---
 
