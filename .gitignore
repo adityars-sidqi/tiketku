@@ -1,0 +1,17 @@
+# Rust
+/target
+**/*.rs.bk
+
+# Secrets dan konfigurasi lokal (folder .sqlx/ justru wajib di-commit)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Editor dan OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db

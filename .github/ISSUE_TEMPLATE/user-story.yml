@@ -1,0 +1,32 @@
+name: User story
+description: Satu potong fungsionalitas yang bisa dikerjakan, dites, dan didemokan
+title: "[F?] "
+labels: ["type:story"]
+body:
+  - type: textarea
+    id: story
+    attributes:
+      label: User story
+      description: "Format: Sebagai <aktor>, saya ingin <kemampuan>, agar <manfaat>."
+      placeholder: Sebagai customer, saya ingin ..., agar ...
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Kriteria penerimaan
+      description: Daftar centang yang bisa dibuktikan dengan test atau demo.
+      value: |
+        - [ ]
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Catatan teknis
+      description: Petunjuk implementasi, crate, atau jebakan yang perlu diingat.
+  - type: input
+    id: reference
+    attributes:
+      label: Referensi soal
+      placeholder: docs/SOAL.md, bagian ...

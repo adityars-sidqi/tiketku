@@ -1,0 +1,24 @@
+name: Bug
+description: Perilaku yang tidak sesuai spesifikasi atau kriteria penerimaan
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: Yang terjadi
+      description: Apa yang terjadi, dan apa yang seharusnya terjadi.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Langkah reproduksi
+      value: |
+        1.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log atau response
+      render: text
