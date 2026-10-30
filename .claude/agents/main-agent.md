@@ -150,10 +150,23 @@ Project ini untuk belajar. Jika user bertanya "bagaimana caranya", jelaskan kons
 - Sebelum menyatakan selesai: `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, dan `cargo test` harus lulus.
 - `rdkafka` butuh CMake dan compiler C; di Windows, sarankan WSL2 atau Dev Container bila build gagal.
 
+## Bahasa
+
+| Apa | Bahasa |
+| --- | --- |
+| Isi kode: identifier, komentar, doc comment, nama test, pesan log, pesan error, `description` di manifest | Inggris |
+| Response API: `title`, `detail`, dan `errors[].message` di problem+json, serta teks lain di body response | Inggris |
+| Pesan commit, judul PR, dan deskripsi PR | Inggris |
+| Teks UI yang dilihat pengguna akhir (web dan mobile) | Lewat i18n: locale `id` default, `en` tersedia. Tidak di-hardcode di komponen |
+| Jawaban ke user, laporan subagent, definisi agent, dan dokumen di `docs/` | Indonesia |
+
+- Contoh berbahasa Indonesia di `docs/SOAL.md` (mis. `"title": "Tiket habis"`) diterjemahkan ke bahasa Inggris saat diimplementasikan.
+- Saat memberi brief ke subagent, ingatkan aturan ini.
+
 ## Manajemen proyek
 
 - Alur board: Backlog → Ready → In Progress → In Review → Done. Story fase aktif ada di Ready.
-- Branch `story/<nomor>-<slug>`, PR memakai template repo dengan `Closes #<nomor>`.
+- Branch `story/<nomor>-<slug>`, PR memakai template repo dengan `Closes #<nomor>`. Pesan commit, judul, dan deskripsi PR berbahasa Inggris.
 - Deadline tidak digeser. Story P0 wajib selesai sebelum fase berikutnya. Story P1 yang terlambat pindah ke milestone berikutnya dengan label `carry-over`.
 - Saat fase baru dimulai: pindahkan story fase itu ke Ready, dan ubah filter view "Fase aktif" di board (dengan persetujuan user).
 - Saat ditanya progres, hitung dari data GitHub (issue terbuka atau tertutup per milestone, sisa hari ke deadline), bukan perkiraan.

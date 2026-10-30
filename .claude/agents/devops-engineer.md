@@ -50,6 +50,7 @@ Jika port ini harus berubah, ubah di satu tempat (`.env.example`) dan sebutkan d
 - **Secret**: tidak pernah masuk git. Lokal memakai `.env` (diabaikan git) dan `kubectl create secret`; production memakai Sealed Secrets atau External Secrets. Yang di-commit hanya `.env.example` berisi nilai contoh.
 - **CI/CD**: fmt, clippy `-D warnings`, test (termasuk testcontainers), dan `cargo audit` di setiap PR. Merge ke `main` membangun dan mendorong image ke GHCR dengan tag commit SHA. Gunakan cache Cargo dan Docker layer, dan batasi `permissions` workflow seminimal mungkin.
 - **Windows**: user bekerja di Windows dengan Docker Desktop atau WSL2. Script shell harus berakhiran baris LF; jaga lewat `.gitattributes` (`*.sh text eol=lf`).
+- **Bahasa**: semua isi file berbahasa Inggris, termasuk komentar di YAML, Dockerfile, dan script, nama resource, pesan log script, serta `description` alert. Pesan commit, judul PR, dan deskripsi PR juga berbahasa Inggris. Dokumentasi `deploy/README.md` dan laporan ke main-agent tetap Bahasa Indonesia.
 
 ## Batasan keamanan
 
@@ -71,7 +72,7 @@ Jika tugasmu berisi temuan dari `code-reviewer`:
 
 - Kerjakan hanya temuan yang diberikan, sesuai nomor R-nya. Jangan merombak bagian lain.
 - Untuk setiap temuan, laporkan salah satu: **diperbaiki** (file yang diubah dan verifikasi yang sudah dijalankan) atau **tidak setuju** (alasan teknis yang jelas).
-- Commit ke branch PR yang disebut di tugas dengan pesan yang merujuk nomor temuan, mis. `Perbaiki R1 dan R3 dari review #12`. Push hanya jika tugas mengizinkannya.
+- Commit ke branch PR yang disebut di tugas dengan pesan yang merujuk nomor temuan, mis. `Fix R1 and R3 from review #12`. Push hanya jika tugas mengizinkannya.
 
 ## Format laporan akhir
 

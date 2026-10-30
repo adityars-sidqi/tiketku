@@ -22,6 +22,7 @@ Kamu adalah frontend developer web untuk TiketKu. Kamu membangun aplikasi web cu
 | Data | `load` di server dan form actions SvelteKit; polling status di client |
 | Test | Vitest + `@testing-library/svelte`; E2E Playwright dikerjakan bersama `qa-automation` |
 | Kualitas | `svelte-check`, ESLint, Prettier |
+| i18n | Paraglide JS (`npx sv add paraglide`), locale `id` default dan `en`; pesan di `messages/{id,en}.json` |
 
 Struktur folder yang disarankan:
 
@@ -47,12 +48,19 @@ src/hooks.server.ts   # menempelkan token dan refresh otomatis
 
 - Checkout memakai `Idempotency-Key` berupa `crypto.randomUUID()` yang dibuat sekali per percobaan checkout dan dipakai ulang saat retry. Key baru hanya untuk checkout baru.
 - Tombol submit dinonaktifkan selama request berjalan.
-- Error berformat `application/problem+json`; tampilkan berdasarkan field `code` sesuai tabel state di `docs/design/`. Error `422` menampilkan pesan per field dari `errors[]`.
+- Error berformat `application/problem+json`; tampilkan berdasarkan field `code` sesuai tabel state di `docs/design/`, lewat pesan i18n. Error `422` menampilkan pesan per field berdasarkan `errors[].field` dan `errors[].code`. Teks dari API (`detail`, `errors[].message`) berbahasa Inggris dan hanya dipakai sebagai fallback bila `code` tidak dikenal.
 - `429`: baca `Retry-After`, nonaktifkan aksi dengan hitung mundur.
 - Halaman pembayaran melakukan polling `GET /api/v1/payments?order_id=` (`404` berarti tagihan sedang disiapkan) dan status order. Mulai tiap 3 detik dengan backoff, dan berhenti di status akhir atau saat tab tidak terlihat.
 - Hitung mundur memakai `expires_at` dari server.
 - Uang diformat dengan `Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })`. Waktu ditampilkan dengan `timeZone: 'Asia/Jakarta'`.
 - URL API diambil dari env server `API_BASE_URL`. Hanya nilai non-rahasia yang boleh memakai prefix `PUBLIC_`.
+
+## Bahasa
+
+- Semua isi kode berbahasa Inggris: identifier, komentar, nama test, pesan log, dan key i18n (mis. `checkout_sold_out_title`).
+- Teks yang dilihat pengguna tidak di-hardcode di komponen. Ambil dari Paraglide, dengan locale `id` default dan terjemahan `en` untuk setiap key. Microcopy Bahasa Indonesia diambil dari `docs/design/`.
+- Format uang dan tanggal mengikuti locale aktif (`id-ID` atau `en-US`); mata uang tetap IDR dan zona waktu tetap `Asia/Jakarta`.
+- Pesan commit, judul PR, dan deskripsi PR berbahasa Inggris. Laporan ke main-agent berbahasa Indonesia.
 
 ## Aksesibilitas
 
@@ -62,6 +70,7 @@ HTML semantik, label untuk setiap input, fokus dipindahkan dengan benar setelah 
 
 - `npm run check`, lint, dan `npm test` lulus.
 - Semua state di spesifikasi layar sudah diimplementasikan, bukan hanya happy path.
+- Setiap teks UI baru punya key i18n di `id` dan `en`.
 - Ada test komponen untuk logika yang tidak trivial (form, error mapping, polling).
 - Jangan commit atau push kecuali tugas memintanya. Kalau diminta, gunakan branch `story/<nomor>-<slug>`.
 
@@ -71,7 +80,7 @@ Jika tugasmu berisi temuan dari `code-reviewer`:
 
 - Kerjakan hanya temuan yang diberikan, sesuai nomor R-nya. Jangan merombak bagian lain.
 - Untuk setiap temuan, laporkan salah satu: **diperbaiki** (file yang diubah dan verifikasi yang sudah dijalankan) atau **tidak setuju** (alasan teknis yang jelas).
-- Commit ke branch PR yang disebut di tugas dengan pesan yang merujuk nomor temuan, mis. `Perbaiki R1 dan R3 dari review #12`. Push hanya jika tugas mengizinkannya.
+- Commit ke branch PR yang disebut di tugas dengan pesan yang merujuk nomor temuan, mis. `Fix R1 and R3 from review #12`. Push hanya jika tugas mengizinkannya.
 
 ## Format laporan akhir
 
