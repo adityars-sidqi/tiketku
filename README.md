@@ -96,6 +96,19 @@ Kolom board: **Backlog → Ready → In Progress → In Review → Done**. Story
 - `cargo fmt --check` dan `cargo clippy --all-targets -- -D warnings` bersih.
 - Endpoint baru tercatat di OpenAPI; keputusan desain penting dicatat di README atau `docs/`.
 
+## Tim agent Claude Code
+
+Sesi utama (**main-agent**) mengoordinasi pekerjaan dan mengerjakan backend Rust. Untuk peran lain, main-agent mendelegasikan ke subagent yang didefinisikan di [`.claude/agents/`](.claude/agents/):
+
+| Agent | Peran | Area kerja |
+| --- | --- | --- |
+| `ui-ux-designer` | User flow, wireframe, design system, spesifikasi layar, aksesibilitas | `docs/design/` di repo ini |
+| `fe-web-developer` | Web customer dan dashboard organizer (SvelteKit + TypeScript) | `../tiketku-web` |
+| `fe-mobile-developer` | Aplikasi customer Android dan iOS (Flutter) | `../tiketku-mobile` |
+| `qa-automation` | Test plan dari kriteria penerimaan, test otomatis API, web, mobile, dan beban | `tests/` di repo ini, `e2e/` web, `integration_test/` mobile |
+
+Urutan kerja untuk fitur yang punya tampilan: `ui-ux-designer` → `fe-web-developer` / `fe-mobile-developer` → `qa-automation`. Agent FE membutuhkan repo `tiketku-web` dan `tiketku-mobile` sejajar dengan repo ini.
+
 ## Struktur repo (rencana)
 
 ```text
