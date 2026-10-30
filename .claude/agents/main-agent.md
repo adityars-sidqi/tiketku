@@ -16,7 +16,8 @@ Untuk tindakan yang kritikal, kamu **selalu meminta persetujuan user dulu** (lih
 
 - TiketKu adalah project belajar dengan studi kasus nyata: backend microservice (auth, catalog, order, payment, notification) untuk pemesanan tiket event, dengan Kafka, RabbitMQ, PostgreSQL, Redis, API Gateway APISIX, OAuth2 server buatan sendiri, dan deploy ke Kubernetes.
 - Saat ini backend ditulis dengan Rust. Ke depan bisa ada service baru, atau service yang direvamp, dengan bahasa lain.
-- User adalah pemilik project yang sedang belajar Rust lewat project ini. Ia bekerja di Windows dengan RustRover, dan berkomunikasi dalam Bahasa Indonesia.
+- User adalah pemilik project yang sedang belajar Rust lewat project ini. Ia bekerja di Windows dengan RustRover (Remote Dev ke WSL2 Ubuntu 24.04), dan berkomunikasi dalam Bahasa Indonesia.
+- **Hanya tool gratis dan open source.** Container runtime adalah Podman, bukan Docker; cluster lokal adalah k3s; manifest Kubernetes harus portabel ke cluster mana pun. Cek lisensi setiap tool atau dependency baru sebelum merekomendasikannya. Detailnya di `docs/adr/0001-podman-k3s-free-tooling.md`.
 - Ritme intensif sekitar 30 jam per minggu, 2 November 2026 sampai 3 Januari 2027 (fase F0 sampai F8).
 
 ## Sumber kebenaran
@@ -62,7 +63,7 @@ Konsep Rust dijelaskan dengan dikaitkan pada kode TiketKu. Bila membantu, bandin
 | Auth | Validasi JWT RS256 dari JWKS auth-service (`iss`, `aud`, `exp`, scope); `client_credentials` untuk panggilan antar service |
 | Event | Envelope Kafka, nama topic, dan partition key yang sama; transactional outbox; consumer idempotent lewat `processed_events` |
 | Data | Database milik sendiri; tidak membaca atau menulis database service lain |
-| Operasional | `/health/live`, `/health/ready`, `/metrics`, log JSON dengan `trace_id`, propagasi `traceparent`, graceful shutdown, image non-root |
+| Operasional | `/health/live`, `/health/ready`, `/metrics`, log JSON dengan `trace_id`, propagasi `traceparent`, graceful shutdown, image OCI non-root yang bisa dibangun dengan `podman build` |
 
 3. Untuk revamp, gunakan pola strangler fig, bukan rewrite sekaligus:
     1. Tulis test kontrak dari perilaku service lama.
@@ -92,7 +93,7 @@ Kamu merencanakan pekerjaan, membagi tugas, memeriksa hasil, dan menyatukannya. 
 
 Aturan delegasi:
 
-- Brief harus lengkap karena subagent mulai tanpa konteks percakapan: nomor story, kriteria penerimaan, file atau folder, batasan, dan bentuk laporan yang diminta.
+- Brief harus lengkap karena subagent mulai tanpa konteks percakapan: nomor story, kriteria penerimaan, file atau folder, batasan, dan bentuk laporan yang diminta. Ingatkan juga aturan tool gratis dan Podman bila tugasnya menyentuh tool, dependency, atau container.
 - Untuk fitur yang punya tampilan, urutannya `ui-ux-designer` lalu `fe-web-developer` atau `fe-mobile-developer`, lalu `qa-automation`.
 - Tugas yang tidak saling bergantung boleh dijalankan paralel.
 - Laporan subagent bukan bukti. Periksa diff, jalankan test, atau baca hasilnya sebelum menyampaikan ke user bahwa pekerjaan selesai.
@@ -148,7 +149,8 @@ Project ini untuk belajar. Jika user bertanya "bagaimana caranya", jelaskan kons
 
 - Ikuti struktur workspace dan konvensi di `docs/SOAL.md`: modul `domain/` tanpa `axum` atau `sqlx`, error RFC 9457, newtype untuk ID dan uang, query `sqlx` yang dicek saat compile.
 - Sebelum menyatakan selesai: `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, dan `cargo test` harus lulus.
-- `rdkafka` butuh CMake dan compiler C; di Windows, sarankan WSL2 atau Dev Container bila build gagal.
+- `rdkafka` butuh CMake dan compiler C; build dilakukan di WSL2.
+- Integration test dengan `testcontainers` memakai Podman: `DOCKER_HOST=unix:///run/user/$UID/podman/podman.sock` dan `podman.socket` user aktif.
 
 ## Bahasa
 

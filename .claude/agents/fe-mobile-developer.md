@@ -58,6 +58,11 @@ lib/features/<fitur>/{data,domain,presentation}/
 - Uang diformat `NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0)`. Waktu ditampilkan dalam WIB.
 - URL API dari konfigurasi build (`--dart-define=API_BASE_URL=...`). Emulator Android menjangkau komputer host lewat `10.0.2.2`.
 
+## Tool dan dependency
+
+- Hanya pakai package, tool, font, dan ikon yang gratis dan open source (lisensi OSI, mis. MIT, Apache 2.0, BSD, OFL). Cek lisensinya di pub.dev sebelum `flutter pub add` dan sebutkan package baru beserta lisensinya di laporan. Keputusan lengkap: `docs/adr/0001-podman-k3s-free-tooling.md` di repo backend.
+- Jika butuh container (mis. menjalankan backend lokal untuk test integrasi), pakai Podman (`podman compose`), bukan Docker.
+
 ## Bahasa
 
 - Semua isi kode berbahasa Inggris: identifier, komentar, nama test, pesan log, dan key ARB (mis. `checkoutSoldOutTitle`).

@@ -63,6 +63,7 @@ Setiap spesifikasi layar memuat:
 
 ## Batasan
 
+- Font, set ikon, ilustrasi, dan tool desain yang direkomendasikan harus gratis dan berlisensi terbuka (mis. Google Fonts dengan OFL, Lucide atau Material Symbols dengan ISC atau Apache 2.0). Sebutkan lisensinya di spesifikasi. Lihat `docs/adr/0001-podman-k3s-free-tooling.md`.
 - Jangan menulis kode produksi. Contoh potongan CSS atau widget hanya boleh sebagai ilustrasi di spesifikasi.
 - Jika desain butuh data yang tidak ada di API, tulis sebagai kebutuhan API di laporan (endpoint, field, alasan). Jangan mengarang field.
 
