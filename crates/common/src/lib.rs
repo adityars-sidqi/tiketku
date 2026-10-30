@@ -1,12 +1,12 @@
-//! Infrastruktur bersama untuk semua service TiketKu.
+//! Shared infrastructure for all TiketKu services.
 //!
-//! Crate ini hanya berisi infrastruktur (config, tracing, error problem+json,
-//! health, shutdown), bukan model domain, supaya service tidak saling terikat.
-//! Isinya diisi bertahap mulai story #3 dan #4.
+//! This crate only holds infrastructure (config, tracing, problem+json errors,
+//! health, shutdown), never domain models, so services stay decoupled.
+//! It is filled in gradually starting with stories #3 and #4.
 
-/// Pesan yang dicetak service saat start, mis. `auth-service v0.1.0 berjalan`.
+/// Message printed when a service starts, e.g. `auth-service v0.1.0 started`.
 pub fn startup_message(service: &str, version: &str) -> String {
-    format!("{service} v{version} berjalan")
+    format!("{service} v{version} started")
 }
 
 #[cfg(test)]
@@ -14,10 +14,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn startup_message_memuat_nama_dan_versi() {
+    fn startup_message_contains_name_and_version() {
         assert_eq!(
             startup_message("auth-service", "0.1.0"),
-            "auth-service v0.1.0 berjalan"
+            "auth-service v0.1.0 started"
         );
     }
 }

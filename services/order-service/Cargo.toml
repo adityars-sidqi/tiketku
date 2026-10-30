@@ -1,6 +1,6 @@
 [package]
 name = "order-service"
-description = "Pemesanan tiket, reservasi stok, dan e-tiket TiketKu"
+description = "Ticket orders, stock reservation, and e-tickets for TiketKu"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

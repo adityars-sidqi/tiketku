@@ -1,4 +1,4 @@
-//! Event, venue, kategori tiket, dan stok TiketKu.
+//! Events, venues, ticket categories, and stock for TiketKu.
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

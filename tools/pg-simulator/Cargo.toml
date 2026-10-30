@@ -1,6 +1,6 @@
 [package]
 name = "pg-simulator"
-description = "Payment gateway palsu (CLI) untuk menguji payment-service TiketKu"
+description = "Fake payment gateway (CLI) for testing TiketKu payment-service"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

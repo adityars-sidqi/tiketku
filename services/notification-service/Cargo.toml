@@ -1,6 +1,6 @@
 [package]
 name = "notification-service"
-description = "Email dan notifikasi TiketKu"
+description = "Email and notifications for TiketKu"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

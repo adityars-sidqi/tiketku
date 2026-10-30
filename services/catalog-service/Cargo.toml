@@ -1,6 +1,6 @@
 [package]
 name = "catalog-service"
-description = "Event, venue, kategori tiket, dan stok TiketKu"
+description = "Events, venues, ticket categories, and stock for TiketKu"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

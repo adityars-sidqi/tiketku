@@ -1,6 +1,6 @@
 [package]
 name = "auth-service"
-description = "Registrasi, login, profil, dan OAuth2 Authorization Server TiketKu"
+description = "Registration, login, profile, and OAuth2 Authorization Server for TiketKu"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

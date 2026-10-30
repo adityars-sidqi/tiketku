@@ -1,4 +1,4 @@
-//! Registrasi, login, profil, dan OAuth2 Authorization Server TiketKu.
+//! Registration, login, profile, and OAuth2 Authorization Server for TiketKu.
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

@@ -1,4 +1,4 @@
-//! Pemesanan tiket, reservasi stok, dan e-tiket TiketKu.
+//! Ticket orders, stock reservation, and e-tickets for TiketKu.
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

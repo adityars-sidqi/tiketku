@@ -1,6 +1,6 @@
 [package]
 name = "payment-service"
-description = "Pembayaran dan webhook payment gateway TiketKu"
+description = "Payments and payment gateway webhooks for TiketKu"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

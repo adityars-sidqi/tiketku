@@ -10,15 +10,15 @@ members = [
     "tools/pg-simulator",
 ]
 
-# Metadata yang diwarisi semua crate lewat `xxx.workspace = true`.
+# Metadata inherited by every member crate via `xxx.workspace = true`.
 [workspace.package]
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.98"
 publish = false
 
-# Satu-satunya tempat versi crate ditulis. Crate anggota cukup menulis
-# `nama = { workspace = true }` (boleh menambah `features`).
+# The only place crate versions are written. Member crates just write
+# `name = { workspace = true }` (optionally adding `features`).
 [workspace.dependencies]
 common = { path = "crates/common" }
 

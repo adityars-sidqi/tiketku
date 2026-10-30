@@ -1,4 +1,4 @@
-//! Payment gateway palsu (CLI) untuk menguji payment-service TiketKu.
+//! Fake payment gateway (CLI) for testing TiketKu payment-service.
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

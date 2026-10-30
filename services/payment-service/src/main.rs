@@ -1,4 +1,4 @@
-//! Pembayaran dan webhook payment gateway TiketKu.
+//! Payments and payment gateway webhooks for TiketKu.
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

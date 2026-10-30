@@ -1,6 +1,6 @@
 [package]
 name = "common"
-description = "Infrastruktur bersama semua service TiketKu (bukan model domain)"
+description = "Shared infrastructure for all TiketKu services (no domain models)"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
