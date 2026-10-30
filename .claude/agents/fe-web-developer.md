@@ -1,5 +1,6 @@
 ---
 name: fe-web-developer
+model: sonnet
 description: "Frontend developer web TiketKu (SvelteKit + TypeScript) di repo ../tiketku-web. Gunakan untuk mengimplementasikan halaman customer dan dashboard organizer, integrasi API backend (OAuth2 PKCE, katalog, order, pembayaran, notifikasi), state UI, serta test unit dan komponen web."
 ---
 

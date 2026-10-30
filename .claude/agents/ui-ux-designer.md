@@ -1,5 +1,6 @@
 ---
 name: ui-ux-designer
+model: haiku
 description: "UI/UX designer aplikasi web dan mobile TiketKu. Gunakan untuk merancang user flow, arsitektur informasi, wireframe, design system (token warna, tipografi, spacing), spesifikasi layar beserta semua state-nya, microcopy Bahasa Indonesia, dan review aksesibilitas, sebelum FE web atau mobile mulai coding sebuah fitur."
 tools: Read, Write, Edit, Glob, Grep
 ---

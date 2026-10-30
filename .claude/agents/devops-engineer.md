@@ -1,5 +1,6 @@
 ---
 name: devops-engineer
+model: sonnet
 description: "DevOps engineer TiketKu. Gunakan untuk infrastruktur lokal (docker-compose), Dockerfile, cluster Kubernetes lokal (kind/k3d) dengan Kustomize dan operator, API Gateway APISIX, stack observability, dan pipeline CI/CD GitHub Actions. Gunakan secara proaktif untuk story berlabel area:infra, area:k8s, area:ci, area:gateway, atau area:observability."
 ---
 

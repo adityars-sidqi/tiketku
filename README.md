@@ -100,13 +100,16 @@ Kolom board: **Backlog → Ready → In Progress → In Review → Done**. Story
 
 Sesi utama ([**main-agent**](.claude/agents/main-agent.md), dimuat otomatis lewat [`CLAUDE.md`](CLAUDE.md)) menjawab pertanyaan umum seputar project, mengoordinasi pekerjaan, dan mengerjakan backend Rust. Untuk peran lain, main-agent mendelegasikan ke subagent yang didefinisikan di [`.claude/agents/`](.claude/agents/):
 
-| Agent | Peran | Area kerja |
-| --- | --- | --- |
-| `ui-ux-designer` | User flow, wireframe, design system, spesifikasi layar, aksesibilitas | `docs/design/` di repo ini |
-| `fe-web-developer` | Web customer dan dashboard organizer (SvelteKit + TypeScript) | `../tiketku-web` |
-| `fe-mobile-developer` | Aplikasi customer Android dan iOS (Flutter) | `../tiketku-mobile` |
-| `qa-automation` | Test plan dari kriteria penerimaan, test otomatis API, web, mobile, dan beban | `tests/` di repo ini, `e2e/` web, `integration_test/` mobile |
-| `devops-engineer` | docker-compose, Dockerfile, Kubernetes (Kustomize, operator), APISIX, observability, CI/CD | `deploy/`, `Dockerfile`, `.github/workflows/` |
+| Agent | Peran | Area kerja | Model |
+| --- | --- | --- | --- |
+| `main-agent` | Perencanaan, arsitektur, pertanyaan umum, backend Rust, koordinasi | Repo ini | Opus |
+| `ui-ux-designer` | User flow, wireframe, design system, spesifikasi layar, aksesibilitas | `docs/design/` di repo ini | Haiku |
+| `fe-web-developer` | Web customer dan dashboard organizer (SvelteKit + TypeScript) | `../tiketku-web` | Sonnet |
+| `fe-mobile-developer` | Aplikasi customer Android dan iOS (Flutter) | `../tiketku-mobile` | Sonnet |
+| `qa-automation` | Test plan dari kriteria penerimaan, test otomatis API, web, mobile, dan beban | `tests/` di repo ini, `e2e/` web, `integration_test/` mobile | Sonnet |
+| `devops-engineer` | docker-compose, Dockerfile, Kubernetes (Kustomize, operator), APISIX, observability, CI/CD | `deploy/`, `Dockerfile`, `.github/workflows/` | Sonnet |
+
+Supaya hemat token, perencanaan dikerjakan main-agent dengan model kuat, sedangkan pekerjaan per peran dijalankan subagent dengan model yang lebih murah. Model sesi utama diatur di [`.claude/settings.json`](.claude/settings.json); model subagent diatur di frontmatter masing-masing.
 
 Urutan kerja untuk fitur yang punya tampilan: `ui-ux-designer` → `fe-web-developer` / `fe-mobile-developer` → `qa-automation`. `devops-engineer` mengerjakan story infrastruktur (F0, F6, F7, F8) dan menyiapkan lingkungan yang dipakai agent lain. Agent FE membutuhkan repo `tiketku-web` dan `tiketku-mobile` sejajar dengan repo ini.
 
