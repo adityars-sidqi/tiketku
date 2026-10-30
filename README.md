@@ -106,8 +106,9 @@ Sesi utama (**main-agent**) mengoordinasi pekerjaan dan mengerjakan backend Rust
 | `fe-web-developer` | Web customer dan dashboard organizer (SvelteKit + TypeScript) | `../tiketku-web` |
 | `fe-mobile-developer` | Aplikasi customer Android dan iOS (Flutter) | `../tiketku-mobile` |
 | `qa-automation` | Test plan dari kriteria penerimaan, test otomatis API, web, mobile, dan beban | `tests/` di repo ini, `e2e/` web, `integration_test/` mobile |
+| `devops-engineer` | docker-compose, Dockerfile, Kubernetes (Kustomize, operator), APISIX, observability, CI/CD | `deploy/`, `Dockerfile`, `.github/workflows/` |
 
-Urutan kerja untuk fitur yang punya tampilan: `ui-ux-designer` → `fe-web-developer` / `fe-mobile-developer` → `qa-automation`. Agent FE membutuhkan repo `tiketku-web` dan `tiketku-mobile` sejajar dengan repo ini.
+Urutan kerja untuk fitur yang punya tampilan: `ui-ux-designer` → `fe-web-developer` / `fe-mobile-developer` → `qa-automation`. `devops-engineer` mengerjakan story infrastruktur (F0, F6, F7, F8) dan menyiapkan lingkungan yang dipakai agent lain. Agent FE membutuhkan repo `tiketku-web` dan `tiketku-mobile` sejajar dengan repo ini.
 
 ## Struktur repo (rencana)
 
