@@ -1,0 +1,167 @@
+# Local infrastructure for TiketKu (story #2).
+#
+# Run from the repo root:
+#   cp .env.example .env
+#   podman compose --env-file .env -f deploy/docker-compose.yml up -d --wait
+#
+# Every ${VAR:-default} below has the same default as .env.example, so the file
+# also works without a .env. Change values in .env, not here.
+# Compose only auto-loads a .env that sits next to this file, which is
+# why the commands pass --env-file explicitly.
+
+name: tiketku
+
+services:
+  postgres:
+    image: docker.io/library/postgres:${POSTGRES_IMAGE_TAG:-17.11-alpine}
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-tiketku}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tiketku_dev_password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      # Creates auth_db, catalog_db, order_db, payment_db, notification_db.
+      - ./compose/postgres/init-databases.sh:/docker-entrypoint-initdb.d/10-init-databases.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  redis:
+    image: docker.io/library/redis:${REDIS_IMAGE_TAG:-7.4.7-alpine}
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:-tiketku_dev_password}"]
+    environment:
+      # Lets redis-cli authenticate without putting the password on its command line.
+      REDISCLI_AUTH: ${REDIS_PASSWORD:-tiketku_dev_password}
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  # Single-node Kafka in KRaft mode (no ZooKeeper). Topics are NOT auto-created;
+  # they are created explicitly (story #31).
+  kafka:
+    image: docker.io/apache/kafka:${KAFKA_IMAGE_TAG:-4.4.0}
+    restart: unless-stopped
+    hostname: kafka
+    environment:
+      CLUSTER_ID: ${KAFKA_CLUSTER_ID:-MkU3OEVBNTcwNTJENDM2Qk}
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      # INTERNAL: container-to-container (kafka:19092). HOST: apps on the host (localhost:9092).
+      KAFKA_LISTENERS: INTERNAL://:19092,HOST://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:19092,HOST://localhost:${KAFKA_PORT:-9092}
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+    ports:
+      - "${KAFKA_PORT:-9092}:9092"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:19092 > /dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 30s
+
+  # Optional web UI for Kafka. Start with: --profile tools
+  kafka-ui:
+    image: docker.io/kafbat/kafka-ui:${KAFKA_UI_IMAGE_TAG:-v1.5.0}
+    profiles: ["tools"]
+    restart: unless-stopped
+    environment:
+      KAFKA_CLUSTERS_0_NAME: tiketku-local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:19092
+      DYNAMIC_CONFIG_ENABLED: "false"
+    ports:
+      - "${KAFKA_UI_PORT:-8090}:8080"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  rabbitmq:
+    image: docker.io/library/rabbitmq:${RABBITMQ_IMAGE_TAG:-4.3.7-management-alpine}
+    restart: unless-stopped
+    # RabbitMQ stores data under a directory named after the node (derived from
+    # the hostname), so the hostname must stay fixed for the volume to be reused.
+    hostname: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-tiketku}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-tiketku_dev_password}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-tiketku}
+    ports:
+      - "${RABBITMQ_AMQP_PORT:-5672}:5672"
+      - "${RABBITMQ_UI_PORT:-15672}:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # Catches outgoing email in development; nothing is delivered to real inboxes.
+  mailpit:
+    image: docker.io/axllent/mailpit:${MAILPIT_IMAGE_TAG:-v1.32.0}
+    restart: unless-stopped
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: "1"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "1"
+    ports:
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "${MAILPIT_UI_PORT:-8025}:8025"
+    healthcheck:
+      # The mailpit image has no shell; the binary ships its own readiness probe.
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 5s
+
+  # Jaeger v2 with its built-in all-in-one configuration (in-memory storage,
+  # OTLP receivers on 4317/4318). Traces are lost when the container restarts.
+  jaeger:
+    image: docker.io/jaegertracing/jaeger:${JAEGER_IMAGE_TAG:-2.22.0}
+    restart: unless-stopped
+    ports:
+      - "${JAEGER_UI_PORT:-16686}:16686"
+      - "${OTLP_GRPC_PORT:-4317}:4317"
+      - "${OTLP_HTTP_PORT:-4318}:4318"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:16686/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+
+volumes:
+  postgres-data:
+  redis-data:
+  kafka-data:
+  rabbitmq-data:
