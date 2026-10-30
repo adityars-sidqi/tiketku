@@ -1,0 +1,32 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/common",
+    "services/auth-service",
+    "services/catalog-service",
+    "services/order-service",
+    "services/payment-service",
+    "services/notification-service",
+    "tools/pg-simulator",
+]
+
+# Metadata yang diwarisi semua crate lewat `xxx.workspace = true`.
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.98"
+publish = false
+
+# Satu-satunya tempat versi crate ditulis. Crate anggota cukup menulis
+# `nama = { workspace = true }` (boleh menambah `features`).
+[workspace.dependencies]
+common = { path = "crates/common" }
+
+anyhow = "1.0.104"
+tokio = { version = "1.54.1", features = ["full"] }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
