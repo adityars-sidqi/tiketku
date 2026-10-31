@@ -71,11 +71,17 @@ const MAX_REQUEST_ID_LEN: usize = 128;
 /// Adds request ID handling and a `request` span to every route:
 ///
 /// 1. Drop an incoming `x-request-id` that is empty, longer than 128 bytes,
-///    or has characters outside `[A-Za-z0-9_-]` (keeps logs clean).
+///    has characters outside `[A-Za-z0-9_-]`, or is sent more than once
+///    (keeps logs and forwarded headers clean).
 /// 2. Keep a valid incoming `x-request-id`, or create a UUID v7 if missing.
 /// 3. Open a `request` span with `request_id`, `method`, and `path`.
 /// 4. Copy `x-request-id` to the response.
 /// 5. Add `instance` and `request_id` to problem+json error bodies.
+///
+/// Call this **last**, after every other `layer` (auth, timeout, ...):
+/// errors from layers added after it get no `request_id` span, no
+/// `instance`/`request_id` in their body, and no echoed header. Layers that
+/// rewrite bodies, such as compression, belong inside (before this call).
 pub fn with_request_id<S>(router: Router<S>) -> Router<S>
 where
     S: Clone + Send + Sync + 'static,
@@ -91,10 +97,11 @@ where
 }
 
 async fn drop_invalid_request_id<B>(mut request: Request<B>) -> Request<B> {
-    let valid = request
-        .headers()
-        .get(REQUEST_ID_HEADER)
-        .is_none_or(|value| is_valid_request_id(value.as_bytes()));
+    let values = request.headers().get_all(REQUEST_ID_HEADER);
+    let valid = values.iter().count() <= 1
+        && values
+            .iter()
+            .all(|value| is_valid_request_id(value.as_bytes()));
     if !valid {
         request.headers_mut().remove(REQUEST_ID_HEADER);
     }
@@ -301,6 +308,52 @@ mod tests {
 
         assert_eq!(body["instance"], "/orders/7");
         assert_eq!(body["request_id"], "req-42");
+        assert_eq!(body["code"], "NOT_FOUND");
+    }
+
+    #[tokio::test]
+    async fn duplicate_request_id_headers_are_replaced() {
+        let app = with_request_id(Router::new().route("/ping", get(|| async { "pong" })));
+        let request = Request::get("/ping")
+            .header(REQUEST_ID_HEADER, "good")
+            .header(REQUEST_ID_HEADER, "bad value {}")
+            .body(Body::empty())
+            .unwrap();
+
+        let response = app.oneshot(request).await.unwrap();
+
+        assert_eq!(
+            response.headers().get_all(REQUEST_ID_HEADER).iter().count(),
+            1
+        );
+        assert_new_uuid_v7(&response);
+    }
+
+    #[tokio::test]
+    async fn encoded_problem_body_is_left_untouched() {
+        // Stands in for a compression layer inside `with_request_id`.
+        let mark_encoded =
+            axum::middleware::map_response(|mut response: axum::response::Response| async {
+                response.headers_mut().insert(
+                    axum::http::header::CONTENT_ENCODING,
+                    axum::http::HeaderValue::from_static("gzip"),
+                );
+                response
+            });
+        let app = with_request_id(
+            Router::new()
+                .route(
+                    "/orders/{id}",
+                    get(|| async { Err::<(), _>(AppError::not_found("order not found")) }),
+                )
+                .layer(mark_encoded),
+        );
+
+        let response = call(app, Some("req-42"), "/orders/7").await;
+        let bytes = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        let body: Value = serde_json::from_slice(&bytes).unwrap();
+
+        assert!(body.get("instance").is_none(), "body was rewritten: {body}");
         assert_eq!(body["code"], "NOT_FOUND");
     }
 

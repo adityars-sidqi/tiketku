@@ -1,10 +1,55 @@
 //! Email and notifications for TiketKu.
 
+use std::sync::Arc;
+
+use axum::Router;
+use common::health::{self, HealthCheck, TcpCheck};
+use serde::Deserialize;
+
+const SERVICE: &str = "notification-service";
+
+/// Read from `NOTIFICATION_*` environment variables, e.g. `NOTIFICATION_HTTP_PORT`.
+/// No `Debug` derive: the URLs contain passwords.
+#[derive(Deserialize)]
+struct Config {
+    #[serde(default = "default_http_port")]
+    http_port: u16,
+    database_url: String,
+    kafka_brokers: String,
+    rabbitmq_url: String,
+}
+
+fn default_http_port() -> u16 {
+    8085
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    println!(
-        "{}",
-        common::startup_message(env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"))
-    );
+    common::config::load_dotenv()?;
+    common::telemetry::init_tracing(SERVICE)?;
+    let config: Config = common::config::from_env_prefixed("NOTIFICATION")?;
+    tracing::info!(version = env!("CARGO_PKG_VERSION"), "starting");
+
+    let routes = Router::new().merge(health::router(readiness_checks(&config)?));
+    let app = common::telemetry::with_request_id(routes);
+    common::server::serve(app, config.http_port).await?;
     Ok(())
+}
+
+/// Critical: postgres. Also reported, but never `503`: kafka and rabbitmq
+/// (the outbox keeps the service working while brokers are down).
+fn readiness_checks(config: &Config) -> anyhow::Result<Vec<Arc<dyn HealthCheck>>> {
+    Ok(vec![
+        TcpCheck::from_url("postgres", &config.database_url, 5432)
+            .map_err(anyhow::Error::msg)?
+            .into_check(),
+        TcpCheck::from_url("kafka", &config.kafka_brokers, 9092)
+            .map_err(anyhow::Error::msg)?
+            .non_critical()
+            .into_check(),
+        TcpCheck::from_url("rabbitmq", &config.rabbitmq_url, 5672)
+            .map_err(anyhow::Error::msg)?
+            .non_critical()
+            .into_check(),
+    ])
 }

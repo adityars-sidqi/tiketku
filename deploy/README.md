@@ -24,6 +24,26 @@ podman compose --env-file .env -f deploy/docker-compose.yml --profile tools up -
 
 Cek status: `podman compose --env-file .env -f deploy/docker-compose.yml ps`
 
+## Menjalankan service
+
+Setelah infrastruktur healthy, jalankan service dari root repo. Setiap service hanya membaca variabel dengan prefix-nya sendiri (`AUTH_`, `CATALOG_`, `ORDER_`, `PAYMENT_`, `NOTIFICATION_`), jadi kelimanya bisa berbagi satu `.env`.
+
+```bash
+cargo run -p order-service        # satu service, port 8083
+curl localhost:8083/health/live   # 200 selama proses hidup
+curl localhost:8083/health/ready  # 200 jika Postgres dan Redis bisa dihubungi, selain itu 503
+```
+
+| Service | Port | Cek critical (503 jika gagal) | Hanya dilaporkan |
+| --- | --- | --- | --- |
+| auth-service | 8081 | Postgres, Redis | Kafka |
+| catalog-service | 8082 | Postgres, Redis | Kafka |
+| order-service | 8083 | Postgres, Redis | Kafka, RabbitMQ |
+| payment-service | 8084 | Postgres | Kafka |
+| notification-service | 8085 | Postgres | Kafka, RabbitMQ |
+
+Kafka dan RabbitMQ tidak membuat service menjadi not ready, karena transactional outbox membuat order tetap bisa dibuat saat broker mati. Ctrl-C atau SIGTERM menghentikan service dengan rapi: request yang sedang berjalan diselesaikan dulu.
+
 ## Menghentikan
 
 ```bash

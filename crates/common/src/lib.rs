@@ -7,9 +7,13 @@
 //! - [`config`]: typed config from environment variables.
 //! - [`telemetry`]: JSON logs with `service` and `request_id`, request ID middleware.
 //! - [`error`]: [`AppError`], rendered as RFC 9457 `application/problem+json`.
+//! - [`health`]: `/health/live` and `/health/ready` with dependency checks.
+//! - [`server`]: HTTP server with graceful shutdown on SIGTERM or Ctrl-C.
 
 pub mod config;
 pub mod error;
+pub mod health;
+pub mod server;
 pub mod telemetry;
 
 pub use error::{AppError, FieldError};
