@@ -10,8 +10,14 @@
 //! still reported, but do not cause `503`. The transactional outbox keeps
 //! orders working while Kafka is down, and a not-ready pod would block that.
 //!
+//! The ready body names internal hosts and OS errors, so `/health/*` must
+//! never be routed through the public gateway; only the kubelet calls it.
+//!
+//! Merge this router *outside* [`with_request_id`](crate::telemetry::with_request_id)
+//! (`with_request_id(api).merge(health::router(..))`): probes need no request
+//! ID, and its trace layer would log every `503` probe as an error.
+//!
 //! ```
-//! use std::time::Duration;
 //! use axum::Router;
 //! use common::health::{self, TcpCheck};
 //!
@@ -19,7 +25,7 @@
 //!     TcpCheck::from_url("postgres", "postgres://user:pw@localhost:5432/order_db", 5432)
 //!         .unwrap()
 //!         .into_check(),
-//!     TcpCheck::from_url("kafka", "localhost:9092", 9092)
+//!     TcpCheck::from_broker_list("kafka", "localhost:9092", 9092)
 //!         .unwrap()
 //!         .non_critical()
 //!         .into_check(),
@@ -30,6 +36,7 @@
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use axum::Router;
@@ -41,7 +48,12 @@ use tokio::net::TcpStream;
 use tokio::task::JoinSet;
 
 /// How long one check may take before it counts as failed.
-pub const CHECK_TIMEOUT: Duration = Duration::from_secs(2);
+///
+/// Kept under one second because Kubernetes probes default to
+/// `timeoutSeconds: 1`: a slower answer counts as a failed probe even when
+/// the hanging check is non-critical. Probe `timeoutSeconds` must stay above
+/// this value.
+pub const CHECK_TIMEOUT: Duration = Duration::from_millis(800);
 
 /// Boxed future returned by [`HealthCheck::check`].
 pub type CheckFuture<'a> = Pin<Box<dyn Future<Output = Result<(), String>> + Send + 'a>>;
@@ -86,20 +98,39 @@ impl TcpCheck {
         }
     }
 
-    /// Takes the address from a URL (`postgres://u:p@host:5432/db`,
-    /// `redis://host`, `amqp://host:5672/vhost`) or a broker list
-    /// (`host1:9092,host2:9092`). `default_port` is used when none is given.
+    /// Takes the address from one URL (`postgres://u:p@host:5432/db`,
+    /// `redis://host`, `amqp://host:5672/vhost`). `default_port` is used when
+    /// the URL has none. The URL is not split on commas, since a password may
+    /// contain one.
     ///
     /// # Errors
     ///
-    /// Returns a message when no host can be found.
+    /// Returns a message when no valid host and port can be found.
     pub fn from_url(name: impl Into<String>, url: &str, default_port: u16) -> Result<Self, String> {
         let name = name.into();
-        let addrs = url
+        let addr = host_port(url.trim(), default_port)
+            .ok_or_else(|| format!("no valid host in {name} address"))?;
+        Ok(Self::new(name, vec![addr]))
+    }
+
+    /// Takes the addresses from a comma-separated broker list
+    /// (`host1:9092,host2`), as used for Kafka. Passes when any broker
+    /// accepts a connection.
+    ///
+    /// # Errors
+    ///
+    /// Returns a message when an entry has no valid host and port.
+    pub fn from_broker_list(
+        name: impl Into<String>,
+        brokers: &str,
+        default_port: u16,
+    ) -> Result<Self, String> {
+        let name = name.into();
+        let addrs = brokers
             .split(',')
             .map(|part| host_port(part.trim(), default_port))
             .collect::<Option<Vec<_>>>()
-            .ok_or_else(|| format!("no host in {name} address"))?;
+            .ok_or_else(|| format!("no valid host in {name} broker list"))?;
         Ok(Self::new(name, addrs))
     }
 
@@ -125,9 +156,14 @@ fn host_port(url: &str, default_port: u16) -> Option<String> {
         return None;
     }
     // `[::1]:5432` and `host:5432` have a port; `[::1]` and `host` do not.
+    // `host:abc` is rejected instead of becoming `host:abc:5432`.
     let has_port = match host_port.rsplit_once(':') {
+        Some((_, port)) if port.contains(']') => false,
         Some((host, port)) => {
-            !host.is_empty() && !port.contains(']') && port.parse::<u16>().is_ok()
+            if host.is_empty() || port.parse::<u16>().is_err() {
+                return None;
+            }
+            true
         }
         None => false,
     };
@@ -149,11 +185,24 @@ impl HealthCheck for TcpCheck {
 
     fn check(&self) -> CheckFuture<'_> {
         Box::pin(async move {
+            // Connect to every address at once, so one hanging broker does not
+            // use up the whole timeout before a healthy one is tried.
+            let mut attempts = JoinSet::new();
+            for addr in self.addrs.clone() {
+                attempts.spawn(async move {
+                    TcpStream::connect(addr.as_str())
+                        .await
+                        .map(drop)
+                        .map_err(|err| format!("{addr}: {err}"))
+                });
+            }
             let mut last_error = String::from("no address configured");
-            for addr in &self.addrs {
-                match TcpStream::connect(addr.as_str()).await {
-                    Ok(_) => return Ok(()),
-                    Err(err) => last_error = format!("{addr}: {err}"),
+            while let Some(joined) = attempts.join_next().await {
+                match joined {
+                    // Dropping `attempts` cancels the remaining connects.
+                    Ok(Ok(())) => return Ok(()),
+                    Ok(Err(err)) => last_error = err,
+                    Err(err) => last_error = format!("connect task failed: {err}"),
                 }
             }
             Err(last_error)
@@ -166,10 +215,19 @@ pub fn router<S>(checks: Vec<Arc<dyn HealthCheck>>) -> Router<S>
 where
     S: Clone + Send + Sync + 'static,
 {
-    let checks: Arc<[Arc<dyn HealthCheck>]> = checks.into();
+    let state = Arc::new(ReadyState {
+        checks: checks.into(),
+        last_ready: AtomicBool::new(true),
+    });
     Router::new()
         .route("/health/live", get(live))
-        .route("/health/ready", get(move || ready(Arc::clone(&checks))))
+        .route("/health/ready", get(move || ready(Arc::clone(&state))))
+}
+
+struct ReadyState {
+    checks: Box<[Arc<dyn HealthCheck>]>,
+    /// Result of the previous probe, so only changes are logged.
+    last_ready: AtomicBool,
 }
 
 async fn live() -> Json<Status> {
@@ -198,14 +256,15 @@ struct CheckResult {
     error: Option<String>,
 }
 
-async fn ready(checks: Arc<[Arc<dyn HealthCheck>]>) -> Response {
+async fn ready(state: Arc<ReadyState>) -> Response {
+    let checks = &state.checks;
     let mut tasks = JoinSet::new();
     for (index, check) in checks.iter().enumerate() {
         let check = Arc::clone(check);
         tasks.spawn(async move {
             let outcome = match tokio::time::timeout(CHECK_TIMEOUT, check.check()).await {
                 Ok(result) => result,
-                Err(_) => Err(format!("timed out after {}s", CHECK_TIMEOUT.as_secs())),
+                Err(_) => Err(format!("timed out after {}ms", CHECK_TIMEOUT.as_millis())),
             };
             (index, outcome)
         });
@@ -234,8 +293,12 @@ async fn ready(checks: Arc<[Arc<dyn HealthCheck>]>) -> Response {
         .collect();
 
     let ready = results.iter().all(|r| !r.critical || r.error.is_none());
-    if !ready {
+    // Probes run every few seconds; log only when readiness changes.
+    let was_ready = state.last_ready.swap(ready, Ordering::Relaxed);
+    if was_ready && !ready {
         tracing::warn!(checks = ?results, "not ready");
+    } else if !was_ready && ready {
+        tracing::info!("ready again");
     }
     let (status, label) = if ready {
         (StatusCode::OK, "ready")
@@ -402,6 +465,7 @@ mod tests {
             ("postgres://u:p@[::1]:5433/db", 5432, "[::1]:5433"),
             ("postgres://u:p@[::1]/db", 5432, "[::1]:5432"),
             ("postgres://u:p@db:5432/x?sslmode=disable", 5432, "db:5432"),
+            ("redis://:a,b@cache:6380", 6379, "cache:6380"),
         ];
         for (url, default_port, expected) in cases {
             assert_eq!(
@@ -411,12 +475,63 @@ mod tests {
             );
         }
         assert_eq!(host_port("postgres://", 5432), None);
+        assert_eq!(host_port("postgres://u:p@db:abc/x", 5432), None);
     }
 
     #[test]
     fn broker_list_becomes_several_addresses() {
-        let check = TcpCheck::from_url("kafka", "k1:9092, k2", 9092).unwrap();
+        let check = TcpCheck::from_broker_list("kafka", "k1:9092, k2", 9092).unwrap();
 
         assert_eq!(check.addrs, ["k1:9092", "k2:9092"]);
+    }
+
+    #[test]
+    fn url_with_comma_in_password_is_one_address() {
+        let check = TcpCheck::from_url("redis", "redis://:a,b@cache:6380", 6379).unwrap();
+
+        assert_eq!(check.addrs, ["cache:6380"]);
+    }
+
+    /// Never finishes, like a dependency that drops SYN packets.
+    struct Hanging;
+
+    impl HealthCheck for Hanging {
+        fn name(&self) -> &str {
+            "kafka"
+        }
+
+        fn critical(&self) -> bool {
+            false
+        }
+
+        fn check(&self) -> CheckFuture<'_> {
+            Box::pin(async {
+                tokio::time::sleep(Duration::from_secs(10)).await;
+                Ok(())
+            })
+        }
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn hanging_non_critical_check_answers_within_probe_timeout() {
+        let app = router(vec![fixed("postgres", true, true), Arc::new(Hanging)]);
+        let started = tokio::time::Instant::now();
+
+        let (status, body) = get_json(app, "/health/ready").await;
+
+        assert!(
+            started.elapsed() < Duration::from_secs(1),
+            "took {:?}",
+            started.elapsed()
+        );
+        assert_eq!(status, StatusCode::OK);
+        assert_eq!(body["checks"][1]["status"], "down");
+        assert!(
+            body["checks"][1]["error"]
+                .as_str()
+                .unwrap()
+                .contains("timed out"),
+            "{body}"
+        );
     }
 }

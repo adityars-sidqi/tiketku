@@ -30,8 +30,12 @@ async fn main() -> anyhow::Result<()> {
     let config: Config = common::config::from_env_prefixed("AUTH")?;
     tracing::info!(version = env!("CARGO_PKG_VERSION"), "starting");
 
-    let routes = Router::new().merge(health::router(readiness_checks(&config)?));
-    let app = common::telemetry::with_request_id(routes);
+    // API routes (added in later stories) get request IDs and request logs.
+    // Health routes stay outside, so kubelet probes every few seconds do not
+    // fill the logs (a 503 probe would log "response failed" each time).
+    let api = Router::new();
+    let app =
+        common::telemetry::with_request_id(api).merge(health::router(readiness_checks(&config)?));
     common::server::serve(app, config.http_port).await?;
     Ok(())
 }
@@ -46,7 +50,7 @@ fn readiness_checks(config: &Config) -> anyhow::Result<Vec<Arc<dyn HealthCheck>>
         TcpCheck::from_url("redis", &config.redis_url, 6379)
             .map_err(anyhow::Error::msg)?
             .into_check(),
-        TcpCheck::from_url("kafka", &config.kafka_brokers, 9092)
+        TcpCheck::from_broker_list("kafka", &config.kafka_brokers, 9092)
             .map_err(anyhow::Error::msg)?
             .non_critical()
             .into_check(),
