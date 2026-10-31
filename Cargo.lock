@@ -37,8 +37,11 @@ name = "auth-service"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "axum",
  "common",
+ "serde",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -122,8 +125,11 @@ name = "catalog-service"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "axum",
  "common",
+ "serde",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -446,8 +452,11 @@ name = "notification-service"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "axum",
  "common",
+ "serde",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -479,8 +488,11 @@ name = "order-service"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "axum",
  "common",
+ "serde",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -517,8 +529,11 @@ name = "payment-service"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "axum",
  "common",
+ "serde",
  "tokio",
+ "tracing",
 ]
 
 [[package]]

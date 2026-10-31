@@ -306,6 +306,11 @@ pub(crate) async fn add_problem_context(request: Request, next: Next) -> Respons
     let Some(mut problem) = response.extensions_mut().remove::<ProblemDetails>() else {
         return response;
     };
+    // An inner layer already encoded the body (e.g. gzip); replacing it with
+    // plain JSON would break the response, so keep it as is.
+    if response.headers().contains_key(header::CONTENT_ENCODING) {
+        return response;
+    }
     problem.instance = Some(instance);
     problem.request_id = request_id;
 

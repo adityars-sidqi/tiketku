@@ -42,14 +42,20 @@ pub struct ConfigError {
     source: Box<config::ConfigError>,
 }
 
-impl From<config::ConfigError> for ConfigError {
-    fn from(source: config::ConfigError) -> Self {
+impl ConfigError {
+    fn new(source: config::ConfigError, prefix: Option<&str>) -> Self {
         // For a missing field, name the environment variable the user must set.
         let message = match &source {
-            config::ConfigError::NotFound(field) => format!(
-                "missing required environment variable {} (config field `{field}`)",
-                field.to_uppercase()
-            ),
+            config::ConfigError::NotFound(field) => {
+                let var = match prefix {
+                    Some(prefix) => format!("{prefix}_{field}"),
+                    None => field.clone(),
+                };
+                format!(
+                    "missing required environment variable {} (config field `{field}`)",
+                    var.to_uppercase()
+                )
+            }
             other => format!("invalid configuration: {other}"),
         };
         Self {
@@ -82,12 +88,19 @@ pub fn load_dotenv() -> Result<(), dotenvy::Error> {
 /// Returns [`ConfigError`] when a required variable is missing or a value
 /// cannot be parsed into the field type.
 pub fn from_env<T: DeserializeOwned>() -> Result<T, ConfigError> {
-    // `vars_os` instead of `vars`: an unrelated non-UTF-8 variable must not
-    // panic the service; such variables are skipped.
-    from_vars(
-        std::env::vars_os()
-            .filter_map(|(key, value)| Some((key.into_string().ok()?, value.into_string().ok()?))),
-    )
+    load(process_env(), None)
+}
+
+/// Like [`from_env`], but only reads variables named `<PREFIX>_<FIELD>`,
+/// e.g. prefix `ORDER` reads `ORDER_HTTP_PORT` into `http_port`.
+///
+/// Each service uses its own prefix so all five can share one local `.env`.
+///
+/// # Errors
+///
+/// Same as [`from_env`]; a missing variable is reported with its prefix.
+pub fn from_env_prefixed<T: DeserializeOwned>(prefix: &str) -> Result<T, ConfigError> {
+    load(process_env(), Some(prefix))
 }
 
 /// Reads the given key/value pairs into `T`, the same way as [`from_env`].
@@ -104,19 +117,63 @@ where
     K: Into<String>,
     V: Into<String>,
 {
-    let vars: HashMap<String, String> = vars
-        .into_iter()
-        .map(|(key, value)| (key.into(), value.into()))
-        .collect();
+    load(collect(vars), None)
+}
 
+/// Reads the given key/value pairs into `T`, the same way as
+/// [`from_env_prefixed`].
+///
+/// # Errors
+///
+/// Same as [`from_env_prefixed`].
+pub fn from_vars_prefixed<T, I, K, V>(prefix: &str, vars: I) -> Result<T, ConfigError>
+where
+    T: DeserializeOwned,
+    I: IntoIterator<Item = (K, V)>,
+    K: Into<String>,
+    V: Into<String>,
+{
+    load(collect(vars), Some(prefix))
+}
+
+/// The process environment. `vars_os` instead of `vars`: an unrelated
+/// non-UTF-8 variable must not panic the service; such variables are skipped.
+fn process_env() -> HashMap<String, String> {
+    std::env::vars_os()
+        .filter_map(|(key, value)| Some((key.into_string().ok()?, value.into_string().ok()?)))
+        .collect()
+}
+
+fn collect<I, K, V>(vars: I) -> HashMap<String, String>
+where
+    I: IntoIterator<Item = (K, V)>,
+    K: Into<String>,
+    V: Into<String>,
+{
+    vars.into_iter()
+        .map(|(key, value)| (key.into(), value.into()))
+        .collect()
+}
+
+fn load<T: DeserializeOwned>(
+    vars: HashMap<String, String>,
+    prefix: Option<&str>,
+) -> Result<T, ConfigError> {
     // `Environment` lowercases keys, so DATABASE_URL matches `database_url`.
     // No `try_parsing`: it would turn the string "0012345" into the number
     // 12345 and back, silently changing secrets. serde still parses "9000"
     // into a `u16` field without it.
-    let source = config::Environment::default().source(Some(vars));
+    let env = match prefix {
+        Some(prefix) => config::Environment::with_prefix(prefix).prefix_separator("_"),
+        None => config::Environment::default(),
+    };
+    let source = env.source(Some(vars));
 
-    let config = config::Config::builder().add_source(source).build()?;
-    Ok(config.try_deserialize()?)
+    config::Config::builder()
+        .add_source(source)
+        .build()
+        .and_then(config::Config::try_deserialize)
+        .map_err(|err| ConfigError::new(err, prefix))
 }
 
 #[cfg(test)]
@@ -178,6 +235,37 @@ mod tests {
 
         assert_eq!(config.secret, "0012345");
         assert_eq!(config.version, "1.10");
+    }
+
+    #[test]
+    fn prefixed_reads_only_own_variables() {
+        let config: TestConfig = from_vars_prefixed(
+            "ORDER",
+            [
+                ("ORDER_DATABASE_URL", "postgres://localhost/order_db"),
+                ("ORDER_HTTP_PORT", "8083"),
+                ("AUTH_HTTP_PORT", "8081"),
+                ("DATABASE_URL", "postgres://localhost/other_db"),
+            ],
+        )
+        .unwrap();
+
+        assert_eq!(config.database_url, "postgres://localhost/order_db");
+        assert_eq!(config.http_port, 8083);
+    }
+
+    #[test]
+    fn prefixed_missing_var_names_the_prefixed_variable() {
+        let err = from_vars_prefixed::<TestConfig, _, _, _>(
+            "ORDER",
+            [("DATABASE_URL", "postgres://localhost/other_db")],
+        )
+        .unwrap_err();
+
+        assert_eq!(
+            err.to_string(),
+            "missing required environment variable ORDER_DATABASE_URL (config field `database_url`)"
+        );
     }
 
     #[test]
